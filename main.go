@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net"
@@ -50,6 +51,8 @@ func main() {
 		bdpool := backend.BackendPool{
 			Current: 0,
 			Port:    bd.Port,
+			TlsCert: bd.TlsCert,
+			TlsKey:  bd.TlsKey,
 		}
 		host := bd.Host
 		// 备用节点
@@ -85,10 +88,15 @@ func main() {
 				DialContext: (&net.Dialer{
 					Timeout: time.Duration(urlStatus.TimeOut) * time.Millisecond,
 				}).DialContext,
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: false},
 			}
 			reverseproxy.ErrorHandler = func(rw http.ResponseWriter, r *http.Request, e error) {
-				fmt.Printf("|| 本地端口: %-5s || 远程地址: %-21s || Host: %-15s || 备用节点: %s\n", bd.Port, r.RemoteAddr, bd.Host, bd.BackUp)
-				bdpool.BackUp.ReverseProxy.ServeHTTP(rw, r)
+				if bd.BackUp != "" {
+					fmt.Printf("|| 本地端口: %-5s || 远程地址: %-21s || Host: %-15s || 备用节点: %s\n", bd.Port, r.RemoteAddr, bd.Host, bd.BackUp)
+					bdpool.BackUp.ReverseProxy.ServeHTTP(rw, r)
+				} else {
+					fmt.Println("无备用节点!")
+				}
 			}
 			bdpool.Backends = append(bdpool.Backends, &backend.Backend{
 				Url:          uu,
@@ -104,7 +112,7 @@ func main() {
 			Addr:    fmt.Sprintf(":%s", bd.Port),
 			Handler: handler,
 		}
-		go listenAndServe(&server)
+		go listenAndServe(&server, bd.Backends[0].Url.Scheme, bd.TlsCert, bd.TlsKey)
 	}
 
 	fmt.Println("ssrp 启动成功")
@@ -115,8 +123,14 @@ func main() {
 	}
 }
 
-func listenAndServe(s *http.Server) {
-	if err := s.ListenAndServe(); err != nil {
+func listenAndServe(s *http.Server, schema, cert, key string) {
+	var err error
+	if schema == "http" || cert == "" || key == "" {
+		err = s.ListenAndServe()
+	} else {
+		err = s.ListenAndServeTLS(cert, key)
+	}
+	if err != nil {
 		log.Fatal(err)
 	}
 }

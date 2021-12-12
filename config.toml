@@ -1,13 +1,15 @@
 timeout = 500 # 单位 ms
 healthcheck = 5 # 健康检查间隔时间 单位 s
 upstream = [
-    "https://stackoverflow.com:443",
+    "https://github.com:443",
 ]
 
 [backends]
-[backends.8080]
-host = ""
+[backends.8443]
+host = "github.com"
 upstream = "upstream"
+tls_cert = "" # "/etc/ssrp/cert.pem"
+tls_key = ""  # "/etc/ssrp/key.pem"
 url = [
     "https://github.com:443"
 ]

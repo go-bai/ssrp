@@ -26,6 +26,8 @@ type BackendPool struct {
 	Current  uint64     // 当前轮到的节点索引
 	Port     string     // 本地端口
 	BackUp   *Backend   // 备用
+	TlsCert  string     // cert.pem 路径
+	TlsKey   string     // key.pem 路径
 }
 
 func (p *BackendPool) NextIndex() int {

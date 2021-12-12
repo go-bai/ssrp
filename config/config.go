@@ -18,6 +18,8 @@ type Backend struct {
 	Urls     []string
 	BackUp   string
 	Upstream string
+	TlsCert  string
+	TlsKey   string
 }
 
 func (c *Config) Read() (err error) {
@@ -58,19 +60,23 @@ func (c *Config) Read() (err error) {
 				return fmt.Errorf("url and upstream not defined for backend %s", key)
 			}
 
-			if bk["host"] == nil {
-				return fmt.Errorf("host not defined for backend %s", key)
-			}
-
 			backend := Backend{
 				Port: k,
-				Host: bk["host"].(string),
+			}
+			if bk["host"] != nil {
+				backend.Host = bk["host"].(string)
 			}
 			if bk["upstream"] != nil {
 				backend.Upstream = bk["upstream"].(string)
 			}
 			if bk["backup"] != nil {
 				backend.BackUp = bk["backup"].(string)
+			}
+			if bk["tls_cert"] != nil {
+				backend.TlsCert = bk["tls_cert"].(string)
+			}
+			if bk["tls_key"] != nil {
+				backend.TlsKey = bk["tls_key"].(string)
 			}
 			urls := bk["url"].([]interface{})
 			for _, url := range urls {
